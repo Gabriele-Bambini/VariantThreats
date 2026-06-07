@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ title }} — graphweave</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow: hidden; }
+
+  #app { display: flex; height: 100vh; }
+
+  #sidebar {
+    width: 300px; min-width: 300px; background: #161b22; border-right: 1px solid #30363d;
+    display: flex; flex-direction: column; overflow: hidden; z-index: 10;
+  }
+
+  #sidebar-header {
+    padding: 16px; border-bottom: 1px solid #30363d;
+  }
+  #sidebar-header h1 { font-size: 14px; font-weight: 600; color: #58a6ff; letter-spacing: 0.05em; text-transform: uppercase; }
+  #sidebar-header .subtitle { font-size: 12px; color: #8b949e; margin-top: 4px; }
+
+  #search-box {
+    padding: 12px 16px; border-bottom: 1px solid #30363d;
+  }
+  #search {
+    width: 100%; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
+    color: #e6edf3; padding: 8px 12px; font-size: 13px; outline: none;
+  }
+  #search:focus { border-color: #58a6ff; }
+
+  #filters { padding: 12px 16px; border-bottom: 1px solid #30363d; }
+  #filters h3 { font-size: 11px; text-transform: uppercase; color: #8b949e; margin-bottom: 8px; letter-spacing: 0.05em; }
+  .filter-chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px;
+    font-size: 11px; cursor: pointer; margin: 2px; border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  .filter-chip.active { border-color: currentColor; opacity: 1; }
+  .filter-chip:not(.active) { opacity: 0.4; }
+  .filter-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  #node-info { flex: 1; overflow-y: auto; padding: 16px; }
+  #node-info h3 { font-size: 12px; text-transform: uppercase; color: #8b949e; margin-bottom: 12px; letter-spacing: 0.05em; }
+  #node-detail { display: none; }
+  #node-detail h2 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  #node-detail .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-bottom: 12px; }
+  #node-detail .relations { font-size: 12px; }
+  #node-detail .relation-item { padding: 6px 0; border-bottom: 1px solid #21262d; display: flex; align-items: baseline; gap: 6px; }
+  #node-detail .relation-label { color: #8b949e; font-style: italic; }
+  #node-detail .relation-node { color: #58a6ff; cursor: pointer; }
+  #node-detail .relation-node:hover { text-decoration: underline; }
+  #placeholder { color: #8b949e; font-size: 13px; line-height: 1.6; }
+
+  #stats-bar {
+    padding: 10px 16px; border-top: 1px solid #30363d; font-size: 11px; color: #8b949e;
+    display: flex; gap: 16px;
+  }
+  #stats-bar span b { color: #e6edf3; }
+
+  #graph-container { flex: 1; position: relative; }
+  svg { width: 100%; height: 100%; }
+
+  #controls {
+    position: absolute; bottom: 16px; right: 16px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .ctrl-btn {
+    width: 32px; height: 32px; background: #161b22; border: 1px solid #30363d;
+    border-radius: 6px; color: #e6edf3; font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .ctrl-btn:hover { background: #21262d; }
+
+  #tooltip {
+    position: absolute; background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    padding: 10px 14px; font-size: 12px; pointer-events: none; display: none; max-width: 220px;
+    z-index: 100;
+  }
+  #tooltip .t-title { font-weight: 600; margin-bottom: 4px; }
+  #tooltip .t-type { color: #8b949e; font-size: 11px; }
+  #tooltip .t-degree { color: #8b949e; font-size: 11px; }
+
+  .link { stroke-opacity: 0.4; transition: stroke-opacity 0.2s; }
+  .link:hover { stroke-opacity: 1; }
+  .link-label { font-size: 9px; fill: #8b949e; pointer-events: none; }
+  .node circle { stroke: #0d1117; stroke-width: 1.5px; cursor: pointer; transition: r 0.2s; }
+  .node circle:hover { stroke-width: 2.5px; }
+  .node.highlighted circle { stroke: #fff; stroke-width: 2.5px; }
+  .node text { font-size: 10px; fill: #e6edf3; pointer-events: none; text-shadow: 0 0 3px #0d1117; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <h1>⬡ graphweave</h1>
+      <div class="subtitle">{{ title }}</div>
+    </div>
+    <div id="search-box">
+      <input id="search" type="text" placeholder="Search nodes…" autocomplete="off">
+    </div>
+    <div id="filters">
+      <h3>Node types</h3>
+      <div id="type-filters"></div>
+    </div>
+    <div id="node-info">
+      <div id="placeholder">Click any node to explore its relationships.</div>
+      <div id="node-detail"></div>
+    </div>
+    <div id="stats-bar">
+      <span><b>{{ node_count }}</b> nodes</span>
+      <span><b>{{ edge_count }}</b> edges</span>
+    </div>
+  </div>
+
+  <div id="graph-container">
+    <svg id="graph-svg"></svg>
+    <div id="tooltip">
+      <div class="t-title"></div>
+      <div class="t-type"></div>
+      <div class="t-degree"></div>
+    </div>
+    <div id="controls">
+      <button class="ctrl-btn" id="zoom-in" title="Zoom in">+</button>
+      <button class="ctrl-btn" id="zoom-out" title="Zoom out">−</button>
+      <button class="ctrl-btn" id="zoom-fit" title="Fit view" style="font-size:13px">⊙</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+const GRAPH = {{ graph_json }};
+
+const NODE_COLORS = {
+  person: "#4A90D9", organization: "#E67E22", concept: "#27AE60",
+  place: "#8E44AD", event: "#E74C3C", technology: "#1ABC9C",
+  disease: "#C0392B", drug: "#F39C12", gene: "#2ECC71", other: "#95A5A6"
+};
+
+let activeTypes = new Set(Object.keys(NODE_COLORS));
+let selectedNode = null;
+
+// --- Build type filters ---
+const typeCount = {};
+GRAPH.nodes.forEach(n => { typeCount[n.type] = (typeCount[n.type] || 0) + 1; });
+const filtersEl = document.getElementById("type-filters");
+Object.entries(typeCount).sort((a,b) => b[1]-a[1]).forEach(([type, count]) => {
+  const chip = document.createElement("span");
+  chip.className = "filter-chip active";
+  chip.style.color = NODE_COLORS[type] || NODE_COLORS.other;
+  chip.innerHTML = `<span class="filter-dot" style="background:${NODE_COLORS[type]||NODE_COLORS.other}"></span>${type} <small>(${count})</small>`;
+  chip.dataset.type = type;
+  chip.addEventListener("click", () => {
+    if (activeTypes.has(type)) { activeTypes.delete(type); chip.classList.remove("active"); }
+    else { activeTypes.add(type); chip.classList.add("active"); }
+    updateVisibility();
+  });
+  filtersEl.appendChild(chip);
+});
+
+// --- D3 Setup ---
+const svg = d3.select("#graph-svg");
+const container = svg.append("g");
+
+const width = () => document.getElementById("graph-container").clientWidth;
+const height = () => window.innerHeight;
+
+const zoom = d3.zoom().scaleExtent([0.1, 4]).on("zoom", e => container.attr("transform", e.transform));
+svg.call(zoom);
+
+const nodeById = Object.fromEntries(GRAPH.nodes.map(n => [n.id, n]));
+const maxDegree = Math.max(...GRAPH.nodes.map(n => n.degree));
+const nodeRadius = d => 4 + (d.degree / maxDegree) * 18;
+
+// Deduplicate links for display
+const displayLinks = GRAPH.links.map(l => ({...l, source: l.source, target: l.target}));
+
+const simulation = d3.forceSimulation(GRAPH.nodes)
+  .force("link", d3.forceLink(displayLinks).id(d => d.id).distance(d => 80 + Math.random() * 40))
+  .force("charge", d3.forceManyBody().strength(-180))
+  .force("center", d3.forceCenter(width() / 2, height() / 2))
+  .force("collision", d3.forceCollide().radius(d => nodeRadius(d) + 6));
+
+// Links
+const link = container.append("g").selectAll("line")
+  .data(displayLinks).join("line")
+  .attr("class", "link")
+  .attr("stroke", "#30363d")
+  .attr("stroke-width", d => Math.min(1 + (d.weight || 1) * 0.3, 3));
+
+// Link labels (shown on hover via CSS)
+const linkLabel = container.append("g").selectAll("text")
+  .data(displayLinks).join("text")
+  .attr("class", "link-label")
+  .text(d => (d.labels || []).join(", ").slice(0, 30));
+
+// Nodes
+const node = container.append("g").selectAll("g")
+  .data(GRAPH.nodes).join("g")
+  .attr("class", "node")
+  .call(d3.drag()
+    .on("start", (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+    .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
+    .on("end", (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+  );
+
+node.append("circle")
+  .attr("r", nodeRadius)
+  .attr("fill", d => NODE_COLORS[d.type] || NODE_COLORS.other);
+
+node.append("text")
+  .attr("x", d => nodeRadius(d) + 4)
+  .attr("dy", "0.35em")
+  .text(d => d.id.length > 20 ? d.id.slice(0, 18) + "…" : d.id);
+
+// Tooltip
+const tooltip = document.getElementById("tooltip");
+node.on("mouseover", (e, d) => {
+  tooltip.style.display = "block";
+  tooltip.querySelector(".t-title").textContent = d.id;
+  tooltip.querySelector(".t-type").textContent = `Type: ${d.type}`;
+  tooltip.querySelector(".t-degree").textContent = `Connections: ${d.degree}`;
+}).on("mousemove", e => {
+  tooltip.style.left = (e.pageX + 12) + "px";
+  tooltip.style.top = (e.pageY - 28) + "px";
+}).on("mouseout", () => { tooltip.style.display = "none"; });
+
+// Click to select
+node.on("click", (e, d) => {
+  e.stopPropagation();
+  selectedNode = d.id;
+  showNodeDetail(d);
+  highlightNeighbors(d);
+});
+svg.on("click", () => { selectedNode = null; clearHighlight(); clearDetail(); });
+
+simulation.on("tick", () => {
+  link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+  linkLabel.attr("x", d => (d.source.x + d.target.x) / 2)
+           .attr("y", d => (d.source.y + d.target.y) / 2);
+  node.attr("transform", d => `translate(${d.x},${d.y})`);
+});
+
+// --- Zoom controls ---
+document.getElementById("zoom-in").addEventListener("click", () => svg.transition().call(zoom.scaleBy, 1.4));
+document.getElementById("zoom-out").addEventListener("click", () => svg.transition().call(zoom.scaleBy, 0.7));
+document.getElementById("zoom-fit").addEventListener("click", fitView);
+
+function fitView() {
+  const bounds = container.node().getBBox();
+  const w = width(), h = height();
+  const scale = Math.min(w / bounds.width, h / bounds.height) * 0.85;
+  const tx = w / 2 - scale * (bounds.x + bounds.width / 2);
+  const ty = h / 2 - scale * (bounds.y + bounds.height / 2);
+  svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+}
+
+// --- Search ---
+document.getElementById("search").addEventListener("input", e => {
+  const q = e.target.value.toLowerCase().trim();
+  if (!q) { node.style("opacity", 1); return; }
+  node.style("opacity", d => d.id.toLowerCase().includes(q) ? 1 : 0.1);
+  const match = GRAPH.nodes.find(n => n.id.toLowerCase().includes(q));
+  if (match) focusNode(match);
+});
+
+function focusNode(d) {
+  const scale = 1.8;
+  svg.transition().duration(500).call(
+    zoom.transform,
+    d3.zoomIdentity.translate(width()/2 - scale*d.x, height()/2 - scale*d.y).scale(scale)
+  );
+}
+
+// --- Visibility filter ---
+function updateVisibility() {
+  node.style("display", d => activeTypes.has(d.type) ? null : "none");
+  link.style("display", d => {
+    const s = typeof d.source === "object" ? d.source : nodeById[d.source];
+    const t = typeof d.target === "object" ? d.target : nodeById[d.target];
+    return (s && t && activeTypes.has(s.type) && activeTypes.has(t.type)) ? null : "none";
+  });
+}
+
+// --- Highlight neighbors ---
+function highlightNeighbors(d) {
+  const neighbors = new Set([d.id]);
+  displayLinks.forEach(l => {
+    const sid = typeof l.source === "object" ? l.source.id : l.source;
+    const tid = typeof l.target === "object" ? l.target.id : l.target;
+    if (sid === d.id) neighbors.add(tid);
+    if (tid === d.id) neighbors.add(sid);
+  });
+  node.style("opacity", n => neighbors.has(n.id) ? 1 : 0.15);
+  link.style("opacity", l => {
+    const sid = typeof l.source === "object" ? l.source.id : l.source;
+    const tid = typeof l.target === "object" ? l.target.id : l.target;
+    return (sid === d.id || tid === d.id) ? 1 : 0.05;
+  });
+  node.classed("highlighted", n => n.id === d.id);
+}
+function clearHighlight() {
+  node.style("opacity", 1); link.style("opacity", null); node.classed("highlighted", false);
+}
+
+// --- Node detail panel ---
+function showNodeDetail(d) {
+  document.getElementById("placeholder").style.display = "none";
+  const panel = document.getElementById("node-detail");
+  panel.style.display = "block";
+
+  const outgoing = displayLinks.filter(l => (typeof l.source === "object" ? l.source.id : l.source) === d.id);
+  const incoming = displayLinks.filter(l => (typeof l.target === "object" ? l.target.id : l.target) === d.id);
+
+  let html = `<h2>${d.id}</h2>
+    <span class="tag" style="background:${NODE_COLORS[d.type]}22;color:${NODE_COLORS[d.type]}">${d.type}</span>
+    <div class="relations">`;
+
+  if (outgoing.length) {
+    html += `<div style="font-size:11px;text-transform:uppercase;color:#8b949e;margin:8px 0 4px">Outgoing (${outgoing.length})</div>`;
+    outgoing.slice(0, 15).forEach(l => {
+      const tid = typeof l.target === "object" ? l.target.id : l.target;
+      html += `<div class="relation-item"><span class="relation-label">${(l.labels||[]).join(", ")}</span> → <span class="relation-node" onclick="selectNodeById('${tid.replace(/'/g,"\\'")}')"> ${tid}</span></div>`;
+    });
+  }
+  if (incoming.length) {
+    html += `<div style="font-size:11px;text-transform:uppercase;color:#8b949e;margin:8px 0 4px">Incoming (${incoming.length})</div>`;
+    incoming.slice(0, 15).forEach(l => {
+      const sid = typeof l.source === "object" ? l.source.id : l.source;
+      html += `<div class="relation-item"><span class="relation-node" onclick="selectNodeById('${sid.replace(/'/g,"\\'")}')"> ${sid}</span> <span class="relation-label">${(l.labels||[]).join(", ")}</span></div>`;
+    });
+  }
+  html += "</div>";
+  panel.innerHTML = html;
+}
+
+function clearDetail() {
+  document.getElementById("placeholder").style.display = "block";
+  document.getElementById("node-detail").style.display = "none";
+}
+
+window.selectNodeById = function(id) {
+  const d = GRAPH.nodes.find(n => n.id === id);
+  if (d) { showNodeDetail(d); highlightNeighbors(d); focusNode(d); }
+};
+
+setTimeout(fitView, 1200);
+</script>
+</body>
+</html>

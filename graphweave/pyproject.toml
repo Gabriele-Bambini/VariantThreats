@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "graphweave"
+version = "0.1.0"
+description = "Automatically build and visualize knowledge graphs from any source"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "Gabriele Bambini", email = "02gabrielebambini@gmail.com" }]
+keywords = ["knowledge-graph", "llm", "ai", "visualization", "nlp", "graph", "wikipedia", "arxiv"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+    "click>=8.0",
+    "httpx>=0.27",
+    "pyyaml>=6.0",
+    "networkx>=3.2",
+    "rich>=13.0",
+    "jinja2>=3.1",
+    "anthropic>=0.30",
+    "openai>=1.40",
+    "ollama>=0.3",
+    "arxiv>=2.1",
+    "wikipedia-api>=0.6",
+    "pymupdf>=1.24",
+    "beautifulsoup4>=4.12",
+    "python-dotenv>=1.0",
+    "fastapi>=0.111",
+    "uvicorn>=0.30",
+    "aiofiles>=23.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.4", "httpx>=0.27"]
+
+[project.scripts]
+graphweave = "graphweave.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/gabriele-bambini/graphweave"
+Repository = "https://github.com/gabriele-bambini/graphweave"
+Issues = "https://github.com/gabriele-bambini/graphweave/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/graphweave"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
