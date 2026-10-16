@@ -1,5 +1,6 @@
-import wikipediaapi
 from dataclasses import dataclass
+
+import wikipediaapi
 
 
 @dataclass

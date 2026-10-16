@@ -1,5 +1,6 @@
 import httpx
 from bs4 import BeautifulSoup
+
 from .wikipedia import FetchedDocument
 
 
@@ -15,5 +16,5 @@ class URLFetcher:
             title = soup.title.string if soup.title else url
             content = soup.get_text(separator="\n", strip=True)
             return FetchedDocument(title=title, content=content[:50000], source="url", url=url)
-        except Exception:
+        except Exception:  # noqa: BLE001 - best-effort fetch, caller handles None
             return None

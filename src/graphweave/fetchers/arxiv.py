@@ -1,5 +1,6 @@
+
 import arxiv
-from dataclasses import dataclass
+
 from .wikipedia import FetchedDocument
 
 

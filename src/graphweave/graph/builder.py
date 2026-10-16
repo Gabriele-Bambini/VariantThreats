@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import json
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 import networkx as nx
 
@@ -46,7 +47,7 @@ class KnowledgeGraph:
             self._triple_count[key] += 1
             self.graph.add_edge(subj, obj, label=t.predicate, weight=self._triple_count[key])
 
-    def merge(self, other: "KnowledgeGraph") -> None:
+    def merge(self, other: KnowledgeGraph) -> None:
         self.add_triples([
             Triple(
                 subject=u,
@@ -147,7 +148,7 @@ class KnowledgeGraph:
         path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     @classmethod
-    def load(cls, path: Path) -> "KnowledgeGraph":
+    def load(cls, path: Path) -> KnowledgeGraph:
         data = json.loads(path.read_text(encoding="utf-8"))
         kg = cls()
         for node in data["nodes"]:
