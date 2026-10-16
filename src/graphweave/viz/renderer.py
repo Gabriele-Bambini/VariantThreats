@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+
 from jinja2 import Environment, FileSystemLoader
 
 _TEMPLATE_DIR = Path(__file__).parent / "templates"

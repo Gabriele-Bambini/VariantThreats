@@ -1,7 +1,8 @@
-import click
 from pathlib import Path
-from rich.console import Console
+
+import click
 from rich import print as rprint
+from rich.console import Console
 
 console = Console()
 
@@ -10,7 +11,6 @@ console = Console()
 @click.version_option()
 def main():
     """graphweave — Build knowledge graphs from any source, automatically."""
-    pass
 
 
 @main.command()
@@ -36,7 +36,7 @@ def build(topics, arxiv, url, pdf, output, provider, model, ollama_host, obsidia
     """
     from .engine import GraphWeave
 
-    rprint(f"\n[bold cyan]⬡ graphweave[/bold cyan] — building knowledge graph\n")
+    rprint("\n[bold cyan]⬡ graphweave[/bold cyan] — building knowledge graph\n")
 
     gw = GraphWeave(provider=provider, model=model, ollama_host=ollama_host)
 
@@ -64,7 +64,6 @@ def serve(graph_path, port):
     import uvicorn
     from fastapi import FastAPI
     from fastapi.responses import FileResponse, JSONResponse
-    from fastapi.staticfiles import StaticFiles
 
     graph_dir = Path(graph_path).parent
     app = FastAPI()

@@ -1,5 +1,7 @@
-import fitz  # pymupdf
 from pathlib import Path
+
+import fitz  # pymupdf
+
 from .wikipedia import FetchedDocument
 
 
@@ -17,5 +19,5 @@ class PDFFetcher:
                 source="pdf",
                 url=str(path.absolute()),
             )
-        except Exception:
+        except Exception:  # noqa: BLE001 - best-effort fetch, caller handles None
             return None

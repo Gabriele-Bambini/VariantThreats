@@ -11,6 +11,15 @@ graphweave build "CRISPR" "gene therapy" --arxiv "CRISPR cancer 2024" --obsidian
 
 > *An auto-generated Obsidian vault. No manual note-taking.*
 
+**Install from source** (always works, no PyPI needed):
+
+```bash
+git clone https://github.com/Gabriele-Bambini/graphweave   # repository name after rename
+cd graphweave
+pip install -e ".[dev]"
+pytest
+```
+
 ---
 
 ## Features

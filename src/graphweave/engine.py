@@ -1,13 +1,14 @@
 from __future__ import annotations
+
 import os
 from pathlib import Path
 
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from .fetchers import WikipediaFetcher, ArxivFetcher, URLFetcher, PDFFetcher
-from .fetchers.wikipedia import FetchedDocument
 from .extractors import LLMExtractor
+from .fetchers import ArxivFetcher, PDFFetcher, URLFetcher, WikipediaFetcher
+from .fetchers.wikipedia import FetchedDocument
 from .graph import KnowledgeGraph
 from .viz import render_html
 
